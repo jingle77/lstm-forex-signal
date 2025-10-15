@@ -1,0 +1,23 @@
+# .gitignore
+# environments & OS cruft
+.env
+.venv/
+.DS_Store
+
+# python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.ipynb_checkpoints/
+.pytest_cache/
+
+# editors/IDE
+.vscode/
+.idea/
+
+# data & models (generated)
+data/bronze/
+data/silver/
+models/

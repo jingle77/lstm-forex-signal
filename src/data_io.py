@@ -16,7 +16,7 @@ from .config import (
     SILVER_DIR,
     DUCKDB_PATH,
     FMP_1MIN_URL_TEMPLATE,
-    UTC,
+    ET,
 )
 
 
@@ -58,9 +58,12 @@ def _fetch_fmp_1m(symbol: str, api_key: str) -> pd.DataFrame:
     records = []
     for row in data:
         try:
-            ts = pd.to_datetime(row.get("date"), utc=True)
+            ts = pd.to_datetime(row.get("date"))
+            # Treat incoming FMP timestamps as New York time (EST/EDT)
             if ts.tzinfo is None:
-                ts = ts.tz_localize(timezone.utc)
+                ts = ts.tz_localize(ET)
+            else:
+                ts = ts.tz_convert(ET)
             records.append({
                 "ts": ts,
                 "open": float(row.get("open")),
@@ -97,9 +100,11 @@ def _latest_ts_in_bronze(symbol: str) -> Optional[pd.Timestamp]:
         val = res.loc[0, "max_ts"]
         if pd.isna(val):
             return None
-        ts = pd.to_datetime(val, utc=True)
+        ts = pd.to_datetime(val)
         if ts.tzinfo is None:
-            ts = ts.tz_localize(UTC)
+            ts = ts.tz_localize(ET)
+        else:
+            ts = ts.tz_convert(ET)
         return ts
     finally:
         con.close()
@@ -114,7 +119,12 @@ def _append_bronze(symbol: str, bars: pd.DataFrame) -> int:
 
     # Ensure schema & UTC
     bars = bars.copy()
-    bars["ts"] = pd.to_datetime(bars["ts"], utc=True)
+    bars["ts"] = pd.to_datetime(bars["ts"]) 
+    # Ensure tz-aware New York time
+    if bars["ts"].dt.tz is None:
+        bars["ts"] = bars["ts"].dt.tz_localize(ET)
+    else:
+        bars["ts"] = bars["ts"].dt.tz_convert(ET)
     bars["symbol"] = symbol
 
     # Partition by UTC date
@@ -182,7 +192,11 @@ def rebuild_silver_for_symbol(symbol: str, drop_existing: bool = False) -> Dict[
     before = len(df)
 
     # Ensure UTC tz
-    df["ts"] = pd.to_datetime(df["ts"], utc=True)
+    df["ts"] = pd.to_datetime(df["ts"])
+    if df["ts"].dt.tz is None:
+        df["ts"] = df["ts"].dt.tz_localize(ET)
+    else:
+        df["ts"] = df["ts"].dt.tz_convert(ET)
 
     # Partition by date
     df["date"] = df["ts"].dt.strftime("%Y-%m-%d")

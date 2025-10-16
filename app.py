@@ -112,8 +112,11 @@ def _load_model(path: Path):
 
 
 def _format_ts(ts: pd.Timestamp) -> str:
-    ts = pd.to_datetime(ts, utc=True)
-    return ts.strftime("%Y-%m-%d %H:%M:%S UTC")
+    ts = pd.to_datetime(ts)
+    if ts.tzinfo is None:
+        from src.config import ET
+        ts = ts.tz_localize(ET)
+    return ts.strftime("%Y-%m-%d %H:%M:%S %Z")
 
 
 # -------------------------
@@ -356,7 +359,7 @@ with tab_signals:
                         alt.Chart(plot_df)
                         .mark_line(size=2)
                         .encode(
-                            x=alt.X("ts:T", title="Time (UTC)"),
+                            x=alt.X("ts:T", title="Time (ET)"),
                             y=alt.Y("value:Q", title=f"{sym} Close", scale=alt.Scale(zero=False)),
                             color=alt.Color("segment:N", scale=color_scale, title="Segment"),
                             tooltip=[alt.Tooltip("ts:T", title="Time"), alt.Tooltip("value:Q", title="Price", format=".6f"), "segment:N"],

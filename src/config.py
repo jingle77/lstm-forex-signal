@@ -1,8 +1,8 @@
-# src/config.py
 from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 import os
 
@@ -24,19 +24,18 @@ for p in (BRONZE_DIR, SILVER_DIR, MODELS_DIR, DATA_DIR):
 DEFAULT_PAIRS = ["EURUSD", "GBPUSD", "USDJPY", "USDCHF", "AUDUSD", "USDCAD", "NZDUSD"]
 
 # FMP 1-minute historical FX bars
-# Example resolved URL: https://financialmodelingprep.com/api/v3/historical-chart/1min/EURUSD?apikey=YOUR_KEY
 FMP_1MIN_URL_TEMPLATE = "https://financialmodelingprep.com/api/v3/historical-chart/1min/{symbol}?apikey={api_key}"
 
 # Minimal interval between HTTP calls, in seconds (UI can override)
 DEFAULT_MIN_CALL_INTERVAL_SECONDS = 0.25
 
-# All timestamps should be tz-aware UTC
+# Preferred storage/display timezone (as requested): America/New_York (handles EST/EDT)
 UTC = timezone.utc
+ET = ZoneInfo("America/New_York")
 
 
 def load_env() -> None:
     """Load .env if present (idempotent)."""
-    # Only attempt once per process import; dotenv is safe to call multiple times
     load_dotenv(override=False)
 
 
